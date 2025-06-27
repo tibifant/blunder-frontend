@@ -14,19 +14,6 @@
     <div id="chess">
       <div id="board-container">
         <div id="board"></div>
-
-        <div class="piece pawn white" style="--x: 1; --y: 4;"></div>
-        <div class="piece pawn black" style="--x: 2; --y: 4;"></div>
-        <div class="piece rook white" style="--x: 1; --y: 3;"></div>
-        <div class="piece rook black" style="--x: 2; --y: 3;"></div>
-        <div class="piece bishop white" style="--x: 1; --y: 2;"></div>
-        <div class="piece bishop black" style="--x: 2; --y: 2;"></div>
-        <div class="piece knight white" style="--x: 1; --y: 1;"></div>
-        <div class="piece knight black" style="--x: 2; --y: 1;"></div>
-        <div class="piece king white" style="--x: 1; --y: 0;"></div>
-        <div class="piece king black" style="--x: 2; --y: 0;"></div>
-        <div class="piece queen white" style="--x: 4; --y: 0;"></div>
-        <div class="piece queen black" style="--x: 5; --y: 0;"></div>
       </div>
     </div>
   </div>
@@ -38,7 +25,9 @@
     var xmlhttp;
 
     console.log("Sending request to '" + url + "':");
-    console.log(payload);
+    
+    if (payload != null)
+      console.log(payload);
 
     if (window.XMLHttpRequest)
       xmlhttp = new XMLHttpRequest();
@@ -71,7 +60,11 @@
     xmlhttp.timeout = 7500;
     xmlhttp.open("POST", url, true);
     xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    xmlhttp.send(JSON.stringify(payload));
+
+    if (payload != null)
+      xmlhttp.send(JSON.stringify(payload));
+    else
+      xmlhttp.send();
   }
 
   function load_backend_url(url, callback, payload, failure_callback) {
@@ -85,7 +78,99 @@
     return elem;
   }
 
-  function create_board() {
+  var piece_lut = [];
+  var chess_board = [];
+
+  function reset_board() {
+    for (var line of chess_board) {
+      if (!line)
+        continue;
+
+      for (var p of line) {
+        p.element.parent.removeChild(p.element);
+      }
+    }
+
+    chess_board = [];
+
+    for (var i = 0; i < 8; i++)
+      chess_board[i] = [];
+  }
+
+  function make_chess_piece(type, isWhite, x, y) {
+    var parent = document.getElementById("board-container");
+    var clss = 'piece ' + piece_lut[type] + ' ' + (isWhite ? 'white' : 'black');
+    var elem = append_element(parent, 'div', clss);
+    elem.style.setProperty('--x', x);
+    elem.style.setProperty('--y', y);
+    return elem;
+  }
+
+  function update_board(board) {
+    var cb = chess_board.slice();
+    var new_board = [];
+    var removed_pieces = [];
+    var added_pieces = [];
+
+    for (var y = 0; y < 8; y++) {
+      new_board[y] = [];
+
+      for (var x = 0; x < 8; x++) {
+        let dst = board[x][y];
+        let src = cb[x][y];
+
+        if (dst == null) {
+          if (src != null)
+            removed_pieces.push({ type: src.piece, isWhite: src.isWhite, x: null, y: null, element: src.element });
+          continue;
+        }
+
+        if (src == null) {
+            added_pieces.push({ type: dst.piece, isWhite: dst.isWhite, x: x, y: y, element: null });
+        } else if (src.piece != dst.piece || src.isWhite != dst.isWhite) {
+            removed_pieces.push({ type: src.piece, isWhite: src.isWhite, x: null, y: null, element: src.element });
+            added_pieces.push({ type: dst.piece, isWhite: dst.isWhite, x: x, y: y, element: null });
+        } else {
+          new_board[x][y] = dst;
+        }
+      }
+    }
+
+    for (var np of added_pieces) {
+      var found = false;
+      var idx = -1;
+
+      for (var op of removed_pieces) {
+        ++idx;
+
+        if (op.type == np.type && op.isWhite == np.isWhite) {
+          np.element = op.element;
+          np.element.style.setProperty('--x', np.x);
+          np.element.style.setProperty('--y', np.y);
+          removed_pieces.splice(idx, 1);
+          new_board[np.x][np.y] = np;
+          found = true;
+          break;
+        }
+      }
+
+      if (found)
+        continue;
+
+      np.element = make_chess_piece(np.type, np.isWhite, np.x, np.y);
+      new_board[np.x][np.y] = np;
+      chess_board = new_board;
+    }
+  }
+
+  function setup() {
+    piece_lut['P'] = 'pawn';
+    piece_lut['N'] = 'knight';
+    piece_lut['R'] = 'rook';
+    piece_lut['B'] = 'bishop';
+    piece_lut['Q'] = 'queen';
+    piece_lut['K'] = 'king';
+
     var board = document.getElementById('board');
 
     for (var y = 0; y < 8; y++) {
@@ -96,9 +181,12 @@
         elem.style.setProperty('--y', y);
       }
     }
+
+    reset_board();
+    load_backend_url("get_board", update_board, null, reset_board);
   }
 
-  document.addEventListener('DOMContentLoaded', create_board);
+  document.addEventListener('DOMContentLoaded', setup);
 </script>
 </body>
 
