@@ -49,7 +49,7 @@ body {
 
 #app_container {
   margin: 0;
-  background: #1a1a1a;
+  background: radial-gradient(#3f666f, #0d1627);
   width: 100vw;
   height: calc(100% - 25pt);
   padding: 40pt 0;
@@ -65,4 +65,149 @@ div.box {
   padding: 40pt 80pt;
   color: #fff;
   font-family: 'Segoe UI', sans-serif;
+}
+
+#chess {
+  perspective: calc(var(--size) * 10);
+  user-select: none;
+  perspective-origin: calc(var(--size) * 4) calc(var(--size) * 7);
+  --size: calc(min(100vw, 150vh) * 0.15);
+  margin: 0pt auto;
+  transform: scale(var(--scale));
+  --scale: 0.35;
+  position: fixed;
+  left: 0;
+  right: 0;
+}
+
+#board-container {
+  transform-style: preserve-3d;
+  transform: translateY(calc(var(--size) * 2)) rotateX(-35deg);
+}
+
+div.square {
+  width: var(--size);
+  height: var(--size);
+  position: absolute;
+  transform: translateZ(calc((7 - var(--y)) * var(--size))) translateX(calc(var(--x) * var(--size))) translateY(calc(var(--size) * 0.9)) rotateX(90deg) translateZ(calc(var(--size) * -0.5));
+  transform-origin: center;
+  transition: 1.5s background-color ease-out;
+  transition: 1s transform ease-in-out;
+}
+
+div.square:hover {
+  transition: 0.2s background-color ease-out;
+}
+
+div.square.white {
+  background: #e1e1e1;
+}
+
+div.square.black {
+  background: #2b2f35;
+}
+
+div.square.white:hover {
+  background: #95c5ca;
+}
+
+div.square.black:hover {
+  background: #357a8f;
+}
+
+div.square.white.target {
+  background: #f80;
+}
+
+div.square.black.target {
+  background: #840;
+}
+
+div.square.white.target:hover {
+  background: #fa8;
+}
+
+div.square.black.target:hover {
+  background: #c83;
+}
+
+#board {
+  transform-style: preserve-3d;
+}
+
+div.piece {
+  width: calc(var(--size) * 0.6);
+  height: calc(var(--size) * 1.1);
+  position: absolute;
+  transform: translateZ(calc((7 - var(--y) + 0.1) * var(--size))) translateX(calc((var(--x) + 0.2) * var(--size))) translateY(calc(var(--size) * 0.8));
+  background-repeat: no-repeat;
+  background-size: contain;
+  transform-origin: bottom center;
+  transform-style: preserve-3d;
+  background-position-y: bottom;
+  background-position-x: center;
+  pointer-events: none;
+  transition: 1s transform ease-in-out;
+}
+
+div.piece::after {
+  content: '';
+  position: relative;
+  width: calc(var(--size));
+  height: calc(var(--size) * 0.75);
+  background: radial-gradient(#0005 20%, #0002 40%, transparent 60%);
+  display: block;
+  transform: translateX(calc(var(--size) * -0.2)) rotateX(90deg) translateZ(calc(var(--size) * -0.72));
+}
+
+div.piece:hover {
+  filter: contrast(110%) brightness(120%);
+}
+
+div.piece.pawn.white {
+  background-image: url('pw.png');
+}
+
+div.piece.pawn.black {
+  background-image: url('pb.png');
+}
+
+div.piece.knight.white {
+  background-image: url('kw.png');
+}
+
+div.piece.knight.black {
+  background-image: url('kb.png');
+}
+
+div.piece.rook.white {
+  background-image: url('rw.png');
+}
+
+div.piece.rook.black {
+  background-image: url('rb.png');
+}
+
+div.piece.bishop.white {
+  background-image: url('bw.png');
+}
+
+div.piece.bishop.black {
+  background-image: url('bb.png');
+}
+
+div.piece.queen.white {
+  background-image: url('qw.png');
+}
+
+div.piece.queen.black {
+  background-image: url('qb.png');
+}
+
+div.piece.king.white {
+  background-image: url('kw.png');
+}
+
+div.piece.king.black {
+  background-image: url('kb.png');
 }

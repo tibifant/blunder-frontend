@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>darwinwin</title>
+  <title>blunder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="assets/favicon.png">
   <link rel="stylesheet" href="assets/style.css">
@@ -11,54 +11,95 @@
 
 <body>
   <div id="app_container">
-    <script type="module">
-      const server_url = document.location.hostname == 'localhost' || 'http://localhost:21110/';
+    <div id="chess">
+      <div id="board-container">
+        <div id="board"></div>
 
-      function load_url(url, callback, payload, failure_callback) {
-        var xmlhttp;
+        <div class="piece pawn white" style="--x: 1; --y: 4;"></div>
+        <div class="piece pawn black" style="--x: 2; --y: 4;"></div>
+        <div class="piece rook white" style="--x: 1; --y: 3;"></div>
+        <div class="piece rook black" style="--x: 2; --y: 3;"></div>
+        <div class="piece bishop white" style="--x: 1; --y: 2;"></div>
+        <div class="piece bishop black" style="--x: 2; --y: 2;"></div>
+        <div class="piece knight white" style="--x: 1; --y: 1;"></div>
+        <div class="piece knight black" style="--x: 2; --y: 1;"></div>
+        <div class="piece king white" style="--x: 1; --y: 0;"></div>
+        <div class="piece king black" style="--x: 2; --y: 0;"></div>
+        <div class="piece queen white" style="--x: 4; --y: 0;"></div>
+        <div class="piece queen black" style="--x: 5; --y: 0;"></div>
+      </div>
+    </div>
+  </div>
 
-        console.log("Sending request to '" + url + "':");
-        console.log(payload);
+<script>
+  const server_url = document.location.hostname == 'localhost' || 'http://localhost:21110/';
 
-        if (window.XMLHttpRequest)
-          xmlhttp = new XMLHttpRequest();
-        else
-          xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+  function load_url(url, callback, payload, failure_callback) {
+    var xmlhttp;
 
-        xmlhttp.onreadystatechange = function () {
-          if (xmlhttp.readyState == 4) {
-            if (xmlhttp.status >= 200 && xmlhttp.status < 300) {
-              try {
-                let obj = JSON.parse(xmlhttp.responseText);
-                callback(obj);
-              } catch (e) {            
-                  failure_callback(false);
-              }
-            } else { // TODO: handle all relevant error codes
-              if (xmlhttp.status == 403) {
+    console.log("Sending request to '" + url + "':");
+    console.log(payload);
 
-              } else {
-                failure_callback(false);
-              }
-            }
+    if (window.XMLHttpRequest)
+      xmlhttp = new XMLHttpRequest();
+    else
+      xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+
+    xmlhttp.onreadystatechange = function () {
+      if (xmlhttp.readyState == 4) {
+        if (xmlhttp.status >= 200 && xmlhttp.status < 300) {
+          try {
+            let obj = JSON.parse(xmlhttp.responseText);
+            callback(obj);
+          } catch (e) {            
+              failure_callback(false);
+          }
+        } else { // TODO: handle all relevant error codes
+          if (xmlhttp.status == 403) {
+
+          } else {
+            failure_callback(false);
           }
         }
-
-        xmlhttp.ontimeout = (e) => {
-          failure_callback();
-        };
-
-        xmlhttp.timeout = 7500;
-        xmlhttp.open("POST", url, true);
-        xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        xmlhttp.send(JSON.stringify(payload));
       }
+    }
 
-      function load_backend_url(url, callback, payload, failure_callback) {
-        load_url(server_url + url, callback, payload, failure_callback);
+    xmlhttp.ontimeout = (e) => {
+      failure_callback();
+    };
+
+    xmlhttp.timeout = 7500;
+    xmlhttp.open("POST", url, true);
+    xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xmlhttp.send(JSON.stringify(payload));
+  }
+
+  function load_backend_url(url, callback, payload, failure_callback) {
+    load_url(server_url + url, callback, payload, failure_callback);
+  }
+
+  function append_element(parent, type, className) {
+    const elem = document.createElement(type);
+    elem.className = className;
+    parent.appendChild(elem);
+    return elem;
+  }
+
+  function create_board() {
+    var board = document.getElementById('board');
+
+    for (var y = 0; y < 8; y++) {
+      for (var x = 0; x < 8; x++) {
+        let color = ((x ^ y) & 1) == 1 ? "white" : "black";
+        var elem = append_element(board, "div", "square " + color);
+        elem.style.setProperty('--x', x); 
+        elem.style.setProperty('--y', y);
       }
+    }
+  }
 
-    </script>
+  document.addEventListener('DOMContentLoaded', create_board);
+</script>
 </body>
 
 </html>
