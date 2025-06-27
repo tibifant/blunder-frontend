@@ -38,7 +38,9 @@
       if (xmlhttp.readyState == 4) {
         if (xmlhttp.status >= 200 && xmlhttp.status < 300) {
           try {
-            let obj = JSON.parse(xmlhttp.responseText);
+            let obj = undefined;
+            if (xmlhttp.responseText != "")
+              obj = JSON.parse(xmlhttp.responseText);
             callback(obj);
           } catch (e) {            
               failure_callback(false);
@@ -80,21 +82,46 @@
 
   var piece_lut = [];
   var chess_board = [];
+  var chess_squares = [];
 
-  function reset_board() {
+  const state = {
+    none: 0,
+    select_src: 1,
+    select_dst: 2,
+    select_promotion: 3,
+  };
+
+  var move_state = state.none;
+  var move_src = {};
+  var move_dst = {};
+  var is_initialization = true;
+
+  function reset_board(e) {
     for (var line of chess_board) {
       if (!line)
         continue;
 
-      for (var p of line) {
-        p.element.parent.removeChild(p.element);
-      }
+      for (var p of line)
+        if (p && p.element && p.element.parent)
+          p.element.parent.removeChild(p.element);
     }
 
     chess_board = [];
 
-    for (var i = 0; i < 8; i++)
+    for (var i = 0; i < 8; i++) {
       chess_board[i] = [];
+      
+      for (var j = 0; j < 8; j++)
+        chess_board[i][j] = null;
+    }
+
+    if (!is_initialization) {
+      if (e)
+        console.log(e);
+      console.assert('Failed to perform action.');
+    }
+
+    is_initialization = false;
   }
 
   function make_chess_piece(type, isWhite, x, y) {
@@ -112,26 +139,29 @@
     var removed_pieces = [];
     var added_pieces = [];
 
-    for (var y = 0; y < 8; y++) {
-      new_board[y] = [];
+    for (var i = 0; i < 8; i++) {
+      new_board[i] = [];
+      
+      for (var j = 0; j < 8; j++)
+        new_board[i][j] = null;
+    }
 
+    for (var y = 0; y < 8; y++) {
       for (var x = 0; x < 8; x++) {
         let dst = board[x][y];
         let src = cb[x][y];
 
         if (dst == null) {
           if (src != null)
-            removed_pieces.push({ type: src.piece, isWhite: src.isWhite, x: null, y: null, element: src.element });
-          continue;
-        }
-
-        if (src == null) {
+            removed_pieces.push({ type: src.type, isWhite: src.isWhite, element: src.element });
+        } else if (src == null) {
             added_pieces.push({ type: dst.piece, isWhite: dst.isWhite, x: x, y: y, element: null });
-        } else if (src.piece != dst.piece || src.isWhite != dst.isWhite) {
-            removed_pieces.push({ type: src.piece, isWhite: src.isWhite, x: null, y: null, element: src.element });
+        } else if (src.type != dst.piece || src.isWhite != dst.isWhite) {
+            removed_pieces.push({ type: src.type, isWhite: src.isWhite, element: src.element });
             added_pieces.push({ type: dst.piece, isWhite: dst.isWhite, x: x, y: y, element: null });
         } else {
-          new_board[x][y] = dst;
+          src.moves = undefined;
+          new_board[x][y] = src;
         }
       }
     }
@@ -159,8 +189,78 @@
 
       np.element = make_chess_piece(np.type, np.isWhite, np.x, np.y);
       new_board[np.x][np.y] = np;
-      chess_board = new_board;
     }
+
+    for (var op of removed_pieces)
+      if (op.element.parent)
+        op.element.parent.removeChild(op.element);
+
+    chess_board = new_board;
+    
+    load_backend_url("get_valid_moves", update_moves, null, reset_board);
+  }
+
+  function update_moves(moves) {
+    for (var line of chess_board) {
+      for (var p of line) {
+        if (p)
+          p.moves = [];
+      }
+    }
+
+    for (var m of moves)
+      chess_board[m.originX][m.originY].moves.push({ x: m.destinationX, y: m.destinationY, isPromotion: m.isPromotion, isPromotionToQueen: m.isPromotionToQueen });
+ 
+    move_state = state.select_src;  
+  }
+
+  function handle_click(x, y) {
+    if (move_state == state.select_src) {
+      var p = chess_board[x][y];
+      if (p == null)
+        return;
+
+      move_src = { x: x, y: y };
+      chess_squares[x][y].className += " source";
+      
+      for (var m of p.moves) {
+        chess_squares[m.x][m.y].className += " target";
+      }
+
+      move_state = state.select_dst;
+    } else if (move_state == state.select_dst) {
+      for (var sy = 0; sy < 8; sy++)
+        for (var sx = 0; sx < 8; sx++)
+          chess_squares[sx][sy].className = chess_squares[sx][sy].className.replace(' source', '').replace(' target', '');
+        
+      if (x == move_src.x && y == move_src.y) {
+        move_state = state.select_src;
+        move_src = {};
+        return;
+      }
+
+      var p = chess_board[move_src.x][move_src.y];
+
+      for (var m of p.moves) {
+        if (m.x == x && m.y == y) {
+          if (m.isPromotion) {
+            console.alert('promotion not yet supported!');
+            break;
+          }
+
+          found = true;
+          load_backend_url('move', get_updated_board, { originX: move_src.x, originY: move_src.y, destinationX: x, destinationY: y, isPromotion: false }, reset_board);
+          return;
+        }
+      }
+
+      move_state = state.select_src;
+      move_src = {};
+    }
+  }
+
+  function get_updated_board() {
+    load_backend_url("get_board", update_board, null, reset_board);
   }
 
   function setup() {
@@ -173,17 +273,27 @@
 
     var board = document.getElementById('board');
 
+    for (var i = 0; i < 8; i++)
+      chess_squares[i] = [];
+
     for (var y = 0; y < 8; y++) {
       for (var x = 0; x < 8; x++) {
         let color = ((x ^ y) & 1) == 1 ? "white" : "black";
         var elem = append_element(board, "div", "square " + color);
         elem.style.setProperty('--x', x); 
         elem.style.setProperty('--y', y);
+        chess_squares[x][y] = elem;
+
+        (() => { // scope to capture values of x, y
+          let _x = x;
+          let _y = y;
+          elem.addEventListener('click', () => { handle_click(_x, _y); });
+        })();
       }
     }
 
     reset_board();
-    load_backend_url("get_board", update_board, null, reset_board);
+    get_updated_board();
   }
 
   document.addEventListener('DOMContentLoaded', setup);

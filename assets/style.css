@@ -115,20 +115,28 @@ div.square.black:hover {
   background: #357a8f;
 }
 
+div.square.white.source {
+  background: #708d91;
+}
+
+div.square.black.source {
+  background: #2d515c;
+}
+
 div.square.white.target {
-  background: #f80;
+  background: #f1af90;
 }
 
 div.square.black.target {
-  background: #840;
+  background: #a56040;
 }
 
-div.square.white.target:hover {
-  background: #fa8;
+div.square.white.target:hover, div.square.white.source:hover {
+  background: #eec0ab;
 }
 
-div.square.black.target:hover {
-  background: #c83;
+div.square.black.target:hover, div.square.black.source:hover {
+  background: #b1775d;
 }
 
 #board {
@@ -173,11 +181,11 @@ div.piece.pawn.black {
 }
 
 div.piece.knight.white {
-  background-image: url('kw.png');
+  background-image: url('nw.png');
 }
 
 div.piece.knight.black {
-  background-image: url('kb.png');
+  background-image: url('nb.png');
 }
 
 div.piece.rook.white {
