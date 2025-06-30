@@ -148,6 +148,9 @@
 
     for (var y = 0; y < 8; y++) {
       for (var x = 0; x < 8; x++) {
+        if (!board[x])
+          continue;
+
         let dst = board[x][y];
         let src = cb[x][y];
 
@@ -192,8 +195,7 @@
     }
 
     for (var op of removed_pieces)
-      if (op.element.parent)
-        op.element.parent.removeChild(op.element);
+      op.element.parent.removeChild(op.element);
 
     chess_board = new_board;
     
